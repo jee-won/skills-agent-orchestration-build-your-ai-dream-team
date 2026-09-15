@@ -1,0 +1,83 @@
+{
+  "lastUpdated": "2026-09-15T00:00:00Z",
+  "projects": [
+    {
+      "id": "project-pulse",
+      "name": "Project Pulse",
+      "summary": "A shared dashboard for a clear, current view of delivery health.",
+      "owner": "Mona",
+      "team": "Product Experience",
+      "status": "on-track",
+      "recentActivity": "Connected the project data contract and prepared the first review.",
+      "priority": "high",
+      "progress": 72,
+      "dueDate": "2026-10-15",
+      "nextMilestone": "Integrated dashboard review"
+    },
+    {
+      "id": "mobile-onboarding",
+      "name": "Mobile onboarding refresh",
+      "summary": "Simplify the first-run experience and improve activation on small screens.",
+      "owner": "Ari",
+      "team": "Growth",
+      "status": "at-risk",
+      "recentActivity": "Research interviews uncovered two additional accessibility gaps.",
+      "priority": "high",
+      "progress": 46,
+      "dueDate": "2026-09-30",
+      "nextMilestone": "Validate revised prototype"
+    },
+    {
+      "id": "warehouse-migration",
+      "name": "Northstar analytics warehouse migration",
+      "summary": "Move reporting workloads to a governed warehouse without interrupting weekly insights.",
+      "owner": "Jordan",
+      "team": "Data Platform",
+      "status": "blocked",
+      "recentActivity": "Awaiting the security review for the production service account.",
+      "priority": "medium",
+      "progress": 0,
+      "dueDate": "2026-11-20",
+      "nextMilestone": "Approve production access"
+    },
+    {
+      "id": "design-system",
+      "name": "Design system foundations",
+      "summary": "Document reusable interface patterns and make accessible defaults easy to adopt.",
+      "owner": "Priya",
+      "team": "Design Operations",
+      "status": "on-track",
+      "recentActivity": "Published component guidance and completed the color contrast audit.",
+      "priority": "low",
+      "progress": 100,
+      "dueDate": "2026-09-22",
+      "nextMilestone": "Share adoption playbook"
+    },
+    {
+      "id": "customer-insights",
+      "name": "Customer insights and retention signals",
+      "summary": "Bring qualitative feedback and product signals together for quarterly planning.",
+      "owner": "Sam",
+      "team": "Customer Success",
+      "status": "at-risk",
+      "recentActivity": "The first retention cohort report is ready for stakeholder feedback.",
+      "priority": "medium",
+      "progress": 64,
+      "dueDate": "2026-10-08",
+      "nextMilestone": "Review cohort findings"
+    },
+    {
+      "id": "launch-readiness",
+      "name": "Launch readiness",
+      "summary": "Coordinate final documentation, support training, and release communications.",
+      "owner": "Lee",
+      "team": "Go-to-Market",
+      "status": "on-track",
+      "recentActivity": "Support enablement draft is complete and ready for sign-off.",
+      "priority": "low",
+      "progress": 88,
+      "dueDate": "2026-09-28",
+      "nextMilestone": "Complete launch checklist"
+    }
+  ]
+}

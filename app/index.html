@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A current view of project health, priorities, and recent activity.">
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="dashboard-header">
+      <div class="page-shell">
+        <p class="eyebrow">Delivery overview</p>
+        <h1>Project Pulse</h1>
+        <p class="context">A quick read on what is moving, what needs attention, and what is next.</p>
+        <p id="last-updated" class="last-updated" aria-live="polite"></p>
+      </div>
+    </header>
+
+    <main id="main-content" class="dashboard page-shell">
+      <section aria-labelledby="summary-heading">
+        <div class="section-heading">
+          <h2 id="summary-heading">At a glance</h2>
+        </div>
+        <div id="summary-grid" class="summary-grid" aria-live="polite"></div>
+      </section>
+
+      <section aria-labelledby="projects-heading">
+        <div class="section-heading">
+          <h2 id="projects-heading">Projects</h2>
+          <span id="project-count" class="section-count"></span>
+        </div>
+        <div id="state-message" class="state-message" role="status" aria-live="polite">
+          <p class="loading-state">Loading project data...</p>
+        </div>
+        <div id="project-grid" class="project-grid" aria-label="Project cards"></div>
+      </section>
+    </main>
+
+    <noscript>
+      <p class="error-state page-shell">Project Pulse needs JavaScript enabled to load project data.</p>
+    </noscript>
+
+    <template id="project-card-template">
+      <article class="project-card">
+        <div class="card-header">
+          <div>
+            <h3 class="project-name"></h3>
+            <p class="project-owner"></p>
+          </div>
+          <span class="status-badge"></span>
+        </div>
+        <div class="card-meta">
+          <span class="priority-badge"></span>
+          <span class="project-progress-label"></span>
+        </div>
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+          <span class="progress-value"></span>
+        </div>
+        <p class="project-summary"></p>
+        <dl class="project-details">
+          <div>
+            <dt>Recent activity</dt>
+            <dd class="recent-activity"></dd>
+          </div>
+          <div class="next-milestone-detail">
+            <dt>Next milestone</dt>
+            <dd class="next-milestone"></dd>
+          </div>
+          <div class="due-date-detail">
+            <dt>Due</dt>
+            <dd class="due-date"></dd>
+          </div>
+        </dl>
+      </article>
+    </template>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const validStatuses = new Set(["on-track", "at-risk", "blocked"]);
+        const validPriorities = new Set(["high", "medium", "low"]);
+        const labels = {
+          "on-track": "On track",
+          "at-risk": "At risk",
+          blocked: "Blocked",
+          high: "High priority",
+          medium: "Medium priority",
+          low: "Low priority"
+        };
+        const elements = {
+          state: document.getElementById("state-message"),
+          summary: document.getElementById("summary-grid"),
+          projects: document.getElementById("project-grid"),
+          count: document.getElementById("project-count"),
+          updated: document.getElementById("last-updated"),
+          template: document.getElementById("project-card-template")
+        };
+
+        function setState(message, className) {
+          elements.state.className = "state-message " + className;
+          elements.state.replaceChildren();
+          if (message) {
+            const paragraph = document.createElement("p");
+            paragraph.textContent = message;
+            elements.state.appendChild(paragraph);
+          }
+        }
+
+        function validateData(data) {
+          if (!data || typeof data !== "object" || !Array.isArray(data.projects)) {
+            throw new Error("The data must contain a top-level projects array.");
+          }
+          const ids = new Set();
+          data.projects.forEach((project, index) => {
+            if (!project || typeof project !== "object" ||
+                typeof project.name !== "string" ||
+                typeof project.owner !== "string" ||
+                typeof project.recentActivity !== "string" ||
+                typeof project.status !== "string" ||
+                typeof project.priority !== "string") {
+              throw new Error("Project " + (index + 1) + " is missing required fields.");
+            }
+            if (project.id && ids.has(project.id)) {
+              throw new Error("Project IDs must be unique.");
+            }
+            if (project.id) ids.add(project.id);
+            if (!validStatuses.has(project.status) || !validPriorities.has(project.priority)) {
+              throw new Error("Project " + (index + 1) + " has an invalid status or priority.");
+            }
+            if (project.progress !== undefined &&
+                (!Number.isInteger(project.progress) || project.progress < 0 || project.progress > 100)) {
+              throw new Error("Project " + (index + 1) + " has an invalid progress value.");
+            }
+          });
+          return data;
+        }
+
+        function formatDate(value) {
+          if (!value) return "";
+          const date = new Date(value.length === 10 ? value + "T00:00:00" : value);
+          return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en", {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+          }).format(date);
+        }
+
+        function renderSummary(projects) {
+          const metrics = [
+            ["Total projects", projects.length],
+            ["On track", projects.filter((project) => project.status === "on-track").length],
+            ["At risk", projects.filter((project) => project.status === "at-risk").length],
+            ["Blocked", projects.filter((project) => project.status === "blocked").length]
+          ];
+          elements.summary.replaceChildren();
+          metrics.forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "summary-card";
+            const number = document.createElement("strong");
+            number.className = "summary-value";
+            number.textContent = String(value);
+            const caption = document.createElement("span");
+            caption.className = "summary-label";
+            caption.textContent = label;
+            card.append(number, caption);
+            elements.summary.appendChild(card);
+          });
+        }
+
+        function createProjectCard(project) {
+          const card = elements.template.content.cloneNode(true);
+          const progress = project.progress === undefined ? null : project.progress;
+          card.querySelector(".project-name").textContent = project.name;
+          card.querySelector(".project-owner").textContent = "Owner: " + project.owner;
+          card.querySelector(".status-badge").textContent = labels[project.status];
+          card.querySelector(".status-badge").classList.add("status-" + project.status);
+          card.querySelector(".priority-badge").textContent = labels[project.priority];
+          card.querySelector(".priority-badge").classList.add("priority-" + project.priority);
+          card.querySelector(".project-summary").textContent = project.summary || "No summary available.";
+          card.querySelector(".recent-activity").textContent = project.recentActivity;
+
+          const progressBar = card.querySelector(".progress-bar");
+          if (progress === null) {
+            card.querySelector(".project-progress-label").textContent = "Progress unavailable";
+            progressBar.setAttribute("aria-label", "Progress unavailable");
+            progressBar.classList.add("progress-unavailable");
+          } else {
+            card.querySelector(".project-progress-label").textContent = progress + "% complete";
+            progressBar.setAttribute("aria-label", progress + "% complete");
+            progressBar.setAttribute("aria-valuenow", String(progress));
+            card.querySelector(".progress-value").style.width = progress + "%";
+          }
+          if (project.nextMilestone) {
+            card.querySelector(".next-milestone").textContent = project.nextMilestone;
+          } else {
+            card.querySelector(".next-milestone-detail").remove();
+          }
+          if (project.dueDate) {
+            card.querySelector(".due-date").textContent = formatDate(project.dueDate) || "Date unavailable";
+          } else {
+            card.querySelector(".due-date-detail").remove();
+          }
+          return card;
+        }
+
+        function render(data) {
+          renderSummary(data.projects);
+          elements.projects.replaceChildren();
+          elements.count.textContent = data.projects.length + (data.projects.length === 1 ? " project" : " projects");
+          elements.updated.textContent = data.lastUpdated ? "Last updated " + formatDate(data.lastUpdated) : "";
+          if (data.projects.length === 0) {
+            setState("No projects are available yet.", "empty-state");
+            return;
+          }
+          data.projects.forEach((project) => elements.projects.appendChild(createProjectCard(project)));
+          setState("", "state-message");
+        }
+
+        fetch("project-data.json")
+          .then((response) => {
+            if (!response.ok) throw new Error("Data request failed: " + response.status);
+            return response.json();
+          })
+          .then((data) => render(validateData(data)))
+          .catch((error) => {
+            elements.summary.replaceChildren();
+            elements.projects.replaceChildren();
+            elements.count.textContent = "";
+            setState("Unable to load project data. Check project-data.json and refresh.", "error-state");
+            console.error("Project Pulse could not load data:", error);
+          });
+      })();
+    </script>
+  </body>
+</html>
